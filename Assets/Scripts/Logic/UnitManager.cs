@@ -20,7 +20,7 @@ namespace Logic
             this.RevertToSnapShot(snapshot, false);
         }
 
-        public void Init(InitInfo initInfo)
+        public void Init(GameInitInfo gameInitInfo)
         {
             EnemyMap = new SortedDictionary<ulong, Enemy>();
 
@@ -29,7 +29,7 @@ namespace Logic
             Player.Spawn();
 
             //µ–»À
-            foreach (var sid in initInfo.EnemySidList)
+            foreach (var sid in gameInitInfo.EnemySidList)
             {
                 var enemy = new Enemy(Client, sid);
                 enemy.Spawn();

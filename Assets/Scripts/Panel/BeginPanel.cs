@@ -11,15 +11,25 @@ namespace Panel
         public Slider CountSlider;
         public Text CountTxt;
 
+        public Slider LagSlider;
+        public Text LagTxt;
+
         void OnEnable()
         {
             OnCountChanged();
+            OnLagChanged();
         }
 
         public void OnCountChanged()
         {
             var count = (int)CountSlider.value;
             CountTxt.text = count.ToString();
+        }
+
+        public void OnLagChanged()
+        {
+            var lag = (int)LagSlider.value;
+            LagTxt.text = lag.ToString();
         }
 
         public void OnBeginClicked()
@@ -31,13 +41,15 @@ namespace Panel
                 enemy.Add(1);
             }
 
-            var initInfo = new InitInfo
+            var initInfo = new GameInitInfo
             {
                 RandSeed = (uint) DateTimeOffset.Now.ToUnixTimeSeconds(),
                 EnemySidList = enemy
             };
 
-            GamePanel.Instance.StartGame(initInfo);
+            var lag = LagSlider.value / 1000;
+
+            GamePanel.Instance.StartGame(initInfo, lag);
         }
     }
 }

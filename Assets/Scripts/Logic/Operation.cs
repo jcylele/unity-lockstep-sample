@@ -38,7 +38,7 @@ namespace Logic
     }
 
     [ProtoContract]
-    public class InitInfo
+    public class GameInitInfo
     {
         [ProtoMember(1)] public ulong RandSeed;
         [ProtoMember(2)] public List<int> EnemySidList;
@@ -47,7 +47,7 @@ namespace Logic
     [ProtoContract]
     public class GameReport
     {
-        [ProtoMember(1)] public InitInfo InitInfo;
+        [ProtoMember(1)] public GameInitInfo GameInitInfo;
         [ProtoMember(2)] public List<FrameOperation> FrameOperationList;
     }
 

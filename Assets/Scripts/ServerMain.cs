@@ -21,7 +21,7 @@ namespace Server
         /// <summary>
         /// 初始信息
         /// </summary>
-        public InitInfo InitInfo { get; private set; }
+        public GameInitInfo GameInitInfo { get; private set; }
 
         /// <summary>
         /// 结算信息(用于核查验证)
@@ -33,9 +33,9 @@ namespace Server
         /// </summary>
         public GameReport GameReport { get; private set; }
 
-        public void Init(InitInfo initInfo, INetwork network)
+        public void Init(GameInitInfo gameInitInfo, INetwork network)
         {
-            InitInfo = initInfo;
+            GameInitInfo = gameInitInfo;
             Network = network;
             mRunning = false;
         }
@@ -107,7 +107,7 @@ namespace Server
 
                 GameReport = new GameReport()
                 {
-                    InitInfo = InitInfo,
+                    GameInitInfo = GameInitInfo,
                     FrameOperationList = list
                 };
 
@@ -163,7 +163,7 @@ namespace Server
             Logger.SetLevel(LogLevel.Error);
 
             var client = new ClientMain();
-            client.Init(InitInfo, null, false, true);
+            client.Init(GameInitInfo, null, false, true);
             client.OnGameReady();
             client.OnGameStart();
             foreach (var frame in mOperationMap)

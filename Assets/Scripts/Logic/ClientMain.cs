@@ -30,7 +30,7 @@ namespace Logic
         /// </summary>
         private INetwork mNetwork;
 
-        public InitInfo InitInfo { get; private set; }
+        public GameInitInfo GameInitInfo { get; private set; }
         public UnitManager UnitMgr { get; private set; }
         public Player Player => UnitMgr.Player;
         public ResultInfo Result { get; private set; }
@@ -45,11 +45,11 @@ namespace Logic
 
         private float mFrameCd;
 
-        public void Init(InitInfo initInfo, INetwork network, bool withRecord, bool isReplay = false)
+        public void Init(GameInitInfo gameInitInfo, INetwork network, bool withRecord, bool isReplay = false)
         {
             InitStatic();
 
-            InitInfo = initInfo;
+            GameInitInfo = gameInitInfo;
             mNetwork = network;
             WithRecord = withRecord;
             IsReplay = isReplay;
@@ -57,9 +57,9 @@ namespace Logic
             Result = null;
             mWaitFrames = new LinkedList<FrameOperation>();
 
-            mRand = new FRandom(initInfo.RandSeed);
+            mRand = new FRandom(gameInitInfo.RandSeed);
             UnitMgr = new UnitManager(this);
-            UnitMgr.Init(initInfo);
+            UnitMgr.Init(gameInitInfo);
 
             State = GameState.Loading;
         }

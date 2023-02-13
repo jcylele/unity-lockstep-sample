@@ -14,7 +14,7 @@ namespace Mono
         public ClientMain Client { get; }
         public ServerMain Server { get; }
 
-        public GameSimulator(InitInfo initInfo, INetwork network)
+        public GameSimulator(GameInitInfo gameInitInfo, INetwork network)
         {
             Logger.SetLevel(LogLevel.Debug);
             Logger.SetLogger(new MonoLogger());
@@ -24,10 +24,10 @@ namespace Mono
             Network = network;
 
             Client = new ClientMain();
-            Client.Init(initInfo, network, true);
+            Client.Init(gameInitInfo, network, true);
 
             Server = new ServerMain();
-            Server.Init(initInfo, network);
+            Server.Init(gameInitInfo, network);
         }
 
         public void Update(float deltaTime)

@@ -28,10 +28,10 @@ namespace Panel
             }
         }
 
-        private void LoadAll(InitInfo initInfo)
+        private void LoadAll(GameInitInfo gameInitInfo)
         {
             Load(0);
-            foreach (var sid in initInfo.EnemySidList)
+            foreach (var sid in gameInitInfo.EnemySidList)
             {
                 Load(sid);
             }
@@ -124,13 +124,23 @@ namespace Panel
             }
         }
 
-        public void StartGame(InitInfo initInfo)
+        public void StartGame(GameInitInfo gameInitInfo, float lag)
         {
-            var network = new NetworkSimulator();
-            network.SetLatency(0.05f, 0.45f);
-            mSimulator = new GameSimulator(initInfo, network);
+            INetwork network;
+            if (lag == 0f)
+            {
+                network = new NetworkLocal();
+            }
+            else
+            {
+                var simulator = new NetworkSimulator();
+                simulator.SetAverageLag(lag);
+                network = simulator;
+            }
 
-            LoadAll(initInfo);
+            mSimulator = new GameSimulator(gameInitInfo, network);
+
+            LoadAll(gameInitInfo);
 
             this.ShowGame(true);
         }
@@ -139,7 +149,7 @@ namespace Panel
         {
             mSimulator = new ReplaySimulator(report);
 
-            LoadAll(report.InitInfo);
+            LoadAll(report.GameInitInfo);
             
             this.ShowGame(true);
         }

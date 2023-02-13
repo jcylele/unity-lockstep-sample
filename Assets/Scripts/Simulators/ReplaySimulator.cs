@@ -13,7 +13,7 @@ namespace Mono
             Logger.SetLogger(new MonoLogger());
 
             Client = new ClientMain();
-            Client.Init(report.InitInfo, null, true, true);
+            Client.Init(report.GameInitInfo, null, true, true);
             if (report.FrameOperationList != null)
             {
                 foreach (var frameOperation in report.FrameOperationList)

@@ -15,14 +15,14 @@
 //         private ClientMain Client;
 //         private bool mLoading = false;
 //
-//         public void Init(InitInfo initInfo, ClientMain client)
+//         public void Init(GameInitInfo gameInitInfo, ClientMain client)
 //         {
 //             Client = client;
 //             prefabMap = new Dictionary<int, GameObject>();
 //             loadMap = new Dictionary<int, ResourceRequest>();
 //
 //             Load(0);
-//             foreach (var sid in initInfo.EnemySidList)
+//             foreach (var sid in gameInitInfo.EnemySidList)
 //             {
 //                 Load(sid);
 //             }
