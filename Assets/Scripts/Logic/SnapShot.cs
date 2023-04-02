@@ -1,15 +1,32 @@
 using System.Collections.Generic;
-using FixMath;
+using FP;
 using ProtoBuf;
 
 namespace Logic
 {
+    /// <summary>
+    /// interface for snapshot,
+    /// <para>all classes that need to be saved to and reverted from snapshot should implement this interface</para>
+    /// <para>used for rollback(not implemented yet), fast reconnect and consistency check</para>
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
     public interface ISnapshot<in T> where T : BaseSnapshot
     {
+        /// <summary>
+        /// save current state to snapshot
+        /// </summary>
+        /// <param name="snapshot">target snapshot</param>
         void SaveToSnapShot(T snapshot);
-        void RevertToSnapShot(T snapshot, bool needBase);
+        /// <summary>
+        /// revert to specific state from snapshot
+        /// </summary>
+        /// <param name="snapshot">source snapshot</param>
+        void RevertFromSnapShot(T snapshot);
     }
 
+    /// <summary>
+    /// base class to store snapshot data
+    /// </summary>
     [ProtoContract]
     [ProtoInclude(101, typeof(ClientSnapshot))]
     [ProtoInclude(102, typeof(ClientObjectSnapshot))]
@@ -29,7 +46,7 @@ namespace Logic
     public class FRandomSnapshot : BaseSnapshot
     {
         [ProtoMember(1)]
-        public ulong CurSeed;
+        public ulong  CurSeed;
     }
 
     [ProtoContract]

@@ -1,23 +1,26 @@
 namespace Logic
 {
-    public class ClientObject : ISnapshot<ClientObjectSnapshot>
+    /// <summary>
+    /// base class for all objects in logical client
+    /// </summary>
+    public abstract class ClientObject : ISnapshot<ClientObjectSnapshot>
     {
         public static ulong NextUid { get; set; }
 
-        protected readonly ClientMain Client;
+        public ClientMain Client { get;private set; }
 
         public ulong Uid { get; private set; }
 
-        public ClientObject(ClientMain client)
+        protected ClientObject(ClientMain client)
         {
             Client = client;
             Uid = ++NextUid;
         }
 
-        public ClientObject(ClientMain client, ClientObjectSnapshot snapshot)
+        protected ClientObject(ClientMain client, ClientObjectSnapshot snapshot)
         {
             Client = client;
-            this.RevertToSnapShot(snapshot, false);
+            this.RevertFromSnapShot(snapshot);
         }
 
         protected virtual void InnerUpdate()
@@ -34,7 +37,7 @@ namespace Logic
             snapshot.Uid = Uid;
         }
 
-        public void RevertToSnapShot(ClientObjectSnapshot snapshot, bool needBase)
+        public void RevertFromSnapShot(ClientObjectSnapshot snapshot)
         {
             Uid = snapshot.Uid;
         }

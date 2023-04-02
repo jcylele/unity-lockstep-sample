@@ -3,10 +3,10 @@ using Log;
 using Logic;
 using Network;
 
-namespace Server
+namespace Simulators
 {
     /// <summary>
-    /// 服务器，只负责转发
+    /// a simple server, for transmitting data between clients and validating the result
     /// </summary>
     public class ServerMain
     {
@@ -19,19 +19,9 @@ namespace Server
         public INetwork Network { get; private set; }
 
         /// <summary>
-        /// 初始信息
+        /// initial game info
         /// </summary>
         public GameInitInfo GameInitInfo { get; private set; }
-
-        /// <summary>
-        /// 结算信息(用于核查验证)
-        /// </summary>
-        public ResultInfo Result { get; private set; }
-
-        /// <summary>
-        /// 战斗记录，用于重播
-        /// </summary>
-        public GameReport GameReport { get; private set; }
 
         public void Init(GameInitInfo gameInitInfo, INetwork network)
         {
@@ -48,70 +38,70 @@ namespace Server
             }
 
             mElapsedTime += deltaTime;
-            if (mElapsedTime < Const.FrameInterval) return;
+            if (mElapsedTime < LogicConst.FrameInterval) return;
 
             DispatchFrame();
-            mElapsedTime -= Const.FrameInterval;
+            mElapsedTime -= LogicConst.FrameInterval;
             mCurFrame++;
         }
 
         /// <summary>
-        /// 下发帧到C
+        /// dispatch operations in this frame to clients
         /// </summary>
         private void DispatchFrame()
         {
             mOperationMap.TryGetValue(mCurFrame, out var list);
-            var frameOperation = new FrameOperation(mCurFrame, list);
+            var frameOperation = new FrameData(mCurFrame, list);
             Network.SendToClient(frameOperation);
         }
 
         /// <summary>
-        /// C上报就绪
+        /// client notifies server that it's ready to start game
         /// </summary>
         private void OnGameReady()
         {
             Logger.Assert(mRunning == false, "Duplicate OnGameReady");
 
             mRunning = true;
-            Result = null;
-            GameReport = null;
             mCurFrame = 0;
             mElapsedTime = 0;
             mOperationMap = new SortedDictionary<int, List<BaseOperation>>();
 
-            //通知C开始
+            //notify clients that game is started
             var operation = new GameStartOperation();
-            var frameOperation = new FrameOperation(-1, new List<BaseOperation> {operation});
+            var frameOperation = new FrameData(-1, new List<BaseOperation> { operation });
             Network.SendToClient(frameOperation);
         }
 
         /// <summary>
-        /// C上报结算处理，多人结算很久以后再说
+        /// client notifies server that game is finished
         /// </summary>
         private void OnGameFinish(BaseOperation operation)
         {
             mRunning = false;
 
             var gf = operation as GameFinishOperation;
-            Result = gf.Result;
+            var clientResult = gf.Result;
+            var serverResult = RerunGame();
 
-            if (ValidateResult())
+            if (clientResult == serverResult)
             {
                 Logger.Info("Game Finished");
 
-                var list = new List<FrameOperation>(mOperationMap.Count);
+                //save report
+                var list = new List<FrameData>(mOperationMap.Count);
                 foreach (var pair in mOperationMap)
                 {
-                    list.Add(new FrameOperation(pair.Key, pair.Value));
+                    list.Add(new FrameData(pair.Key, pair.Value));
                 }
 
-                GameReport = new GameReport()
+                var gameReport = new GameReport()
                 {
                     GameInitInfo = GameInitInfo,
                     FrameOperationList = list
                 };
 
-                DataBase.Instance.SaveReport(GameReport);
+                GameReportCenter.Instance.SaveReport(gameReport);
             }
             else
             {
@@ -120,12 +110,13 @@ namespace Server
         }
 
         /// <summary>
-        /// 接收到C操作
+        /// receive operation from client
         /// </summary>
         public void OnReceiveOperation(BaseOperation operation)
         {
             Logger.Info($"[Frame] Server Receive {operation} On {mCurFrame}");
 
+            // special operations
             if (operation.OpType < OperationType.MinNormal)
             {
                 switch (operation.OpType)
@@ -141,8 +132,9 @@ namespace Server
                         break;
                 }
             }
-            else
+            else // normal operations
             {
+                // add operation to data of this frame
                 if (!mOperationMap.TryGetValue(mCurFrame, out var list))
                 {
                     list = new List<BaseOperation>();
@@ -154,30 +146,31 @@ namespace Server
         }
 
         /// <summary>
-        /// 战斗结果校验
+        /// replay the game to generate a new result
         /// </summary>
-        /// <returns>校验是否成功</returns>
-        private bool ValidateResult()
+        /// <returns>game result</returns>
+        private ResultInfo RerunGame()
         {
             var oldLevel = Logger.Level;
             Logger.SetLevel(LogLevel.Error);
 
             var client = new ClientMain();
-            client.Init(GameInitInfo, null, false, true);
+            client.Init(GameInitInfo, null, GamePlayMode.Validate);
             client.OnGameReady();
             client.OnGameStart();
             foreach (var frame in mOperationMap)
             {
-                client.OnReceiveFrame(new FrameOperation(frame.Key, frame.Value));
+                client.NetworkProxy.OnReceiveFrameData(new FrameData(frame.Key, frame.Value));
             }
 
             while (client.HandleFrame())
             {
+                client.LogicUpdate();
             }
 
             Logger.SetLevel(oldLevel);
 
-            return Result == client.Result;
+            return client.Result;
         }
     }
 }

@@ -1,7 +1,10 @@
 using Logic;
 
-namespace Mono
+namespace Simulators
 {
+    /// <summary>
+    /// interface of simulator
+    /// </summary>
     public interface ISimulator
     {
         public ClientMain Client { get; }

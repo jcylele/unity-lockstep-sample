@@ -2,31 +2,37 @@ using Logic;
 
 namespace Network
 {
-    public delegate void ClientRecvFunc(FrameOperation frameOperation);
+    /// <summary>
+    /// client receives a frame data containing multiple operations at one time from server
+    /// </summary>
+    public delegate void ClientRecvFunc(FrameData frameData);
 
+    /// <summary>
+    /// server receives an operation at one time from client
+    /// </summary>
     public delegate void ServerRecvFunc(BaseOperation operation);
 
+    /// <summary>
+    /// client and server send msg to each other by network
+    /// </summary>
     public interface INetwork
     {
         /// <summary>
-        /// 初始化
+        /// init the msg receive functions of client and server
         /// </summary>
-        /// <param name="clientFunc"></param>
-        /// <param name="serverFunc"></param>
+        /// <param name="clientFunc"> receive function of client </param>
+        /// <param name="serverFunc"> receive function of server </param>
         void Init(ClientRecvFunc clientFunc, ServerRecvFunc serverFunc);
 
-        /// <summary>
-        /// 更新
-        /// </summary>
         void Update(float deltaTime);
 
         /// <summary>
-        /// S向C发送帧操作
+        /// server try to send msg to client
         /// </summary>
-        void SendToClient(FrameOperation frameOperation);
+        void SendToClient(FrameData frameData);
 
         /// <summary>
-        /// C向S发送单操作
+        /// client try to send msg to server
         /// </summary>
         void SendToServer(BaseOperation operation);
     }

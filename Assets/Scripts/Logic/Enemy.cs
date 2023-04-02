@@ -1,9 +1,9 @@
-using FixMath;
+using FP;
 
 namespace Logic
 {
     /// <summary>
-    /// 逻辑敌人
+    /// logical enemy unit
     /// </summary>
     public class Enemy : Unit
     {
@@ -23,7 +23,7 @@ namespace Logic
         }
 
         /// <summary>
-        /// 根据与玩家的相对位置调整方向
+        /// calculate move direction to player
         /// </summary>
         private void CalcDir()
         {
@@ -50,16 +50,17 @@ namespace Logic
             this.mMoveDir = FVector2.Zero;
 
             var playerPos = Client.Player.Pos;
-            var dis = Const.MinSpawnDistance + Client.Player.Config.radius + this.Config.radius;
+            var dis = LogicConst.MinSpawnDistance + Client.Player.Config.radius + this.Config.radius;
             var sqDistance = dis * dis;
 
+            // spawn at a random position that is far enough from player
             while (true)
             {
-                var x = Client.NextRand() % (Const.MaxX * 2) - Const.MaxX;
-                var y = Client.NextRand() % (Const.MaxY * 2) - Const.MaxY;
+                var x = Client.NextRand() % (LogicConst.MaxX * 2) - LogicConst.MaxX;
+                var y = Client.NextRand() % (LogicConst.MaxY * 2) - LogicConst.MaxY;
 
                 var delta = new FVector2(x, y) - playerPos;
-                if (delta.sqLength >= sqDistance)
+                if (delta.SqLength >= sqDistance)
                 {
                     this.mCurPos = new FVector2(x, y);
                     return;

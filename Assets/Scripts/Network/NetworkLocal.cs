@@ -3,7 +3,7 @@ using Logic;
 namespace Network
 {
     /// <summary>
-    /// 本地网络
+    /// simulate local server, no lag and no packet loss
     /// </summary>
     public class NetworkLocal : INetwork
     {
@@ -20,9 +20,9 @@ namespace Network
         {
         }
 
-        public void SendToClient(FrameOperation frameOperation)
+        public void SendToClient(FrameData frameData)
         {
-            mClientFunc(frameOperation);
+            mClientFunc(frameData);
         }
 
         public void SendToServer(BaseOperation operation)

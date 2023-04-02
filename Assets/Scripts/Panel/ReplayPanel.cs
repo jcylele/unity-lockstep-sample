@@ -13,7 +13,7 @@ namespace Panel
 
         void OnEnable()
         {
-            mReportKeys = DataBase.Instance.GetReportKeys();
+            mReportKeys = GameReportCenter.Instance.GetReportKeys();
             ReportDropdown.ClearOptions();
             var list = new List<string>(mReportKeys.Count);
             foreach (var timeStamp in mReportKeys)
@@ -33,7 +33,7 @@ namespace Panel
                 Logger.Error("Wrong Report");
                 return;
             }
-            var report = DataBase.Instance.GetReport(mReportKeys[index]);
+            var report = GameReportCenter.Instance.GetReport(mReportKeys[index]);
             GamePanel.Instance.StartReplay(report);
         }
     }

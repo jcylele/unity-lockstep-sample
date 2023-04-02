@@ -1,29 +1,25 @@
-using System;
 using Logic;
 using System.Collections.Generic;
-using FixMath;
-using Unity.Mathematics;
 using UnityEngine;
 
 namespace Mono
 {
     /// <summary>
-    /// 表现玩家
+    /// show unit of player
     /// </summary>
     public class PlayerBehaviour : MonoBehaviour
     {
         private static readonly Dictionary<KeyCode, KeyType> KeyConvertMap = new Dictionary<KeyCode, KeyType>
         {
-            {KeyCode.UpArrow, KeyType.Up},
-            {KeyCode.DownArrow, KeyType.Down},
-            {KeyCode.LeftArrow, KeyType.Left},
-            {KeyCode.RightArrow, KeyType.Right},
+            { KeyCode.UpArrow, KeyType.Up },
+            { KeyCode.DownArrow, KeyType.Down },
+            { KeyCode.LeftArrow, KeyType.Left },
+            { KeyCode.RightArrow, KeyType.Right },
         };
 
         public Player Player { set; get; }
 
         private Vector2 mOldPos, mNewPos;
-        private float mElapsedTime;
 
         void Start()
         {
@@ -33,41 +29,36 @@ namespace Mono
 
         void Update()
         {
-            UpdateInput();
+            ProcessInput();
             UpdateMove();
         }
 
-        private void UpdateInput()
+        private void ProcessInput()
         {
             foreach (var pair in KeyConvertMap)
             {
                 if (Input.GetKeyDown(pair.Key))
                 {
-                    Player.SendOperation(pair.Value, KeyOpType.Pressed);
+                    Player.Client.PlayerInputManager.SendKeyOperation(pair.Value, KeyOpType.Pressed);
                 }
                 else if (Input.GetKeyUp(pair.Key))
                 {
-                    Player.SendOperation(pair.Value, KeyOpType.Released);
+                    Player.Client.PlayerInputManager.SendKeyOperation(pair.Value, KeyOpType.Released);
                 }
             }
         }
 
         private void UpdateMove()
         {
-            var record = Player.PopRecord();
-            if (record != null)
-            {
-                mNewPos = record.Pos.ToVector2();
-                mOldPos = this.transform.localPosition;
-                mElapsedTime = 0f;
+            mNewPos = Player.Pos.ToVector2();
+            mOldPos = this.transform.localPosition;
 
-                var deltaPos = mNewPos - mOldPos;
-                this.transform.localRotation = Quaternion.FromToRotation(Vector3.up, deltaPos);
-            }
+            var deltaPos = mNewPos - mOldPos;
+            
+            this.transform.localRotation = Quaternion.FromToRotation(Vector3.up, Player.MoveDir.ToVector2());
 
-            mElapsedTime += Time.deltaTime;
-            var rate = math.clamp(mElapsedTime / Const.FrameInterval, 0, 1);
-            var pos = (1 - rate) * mOldPos + rate * mNewPos;
+            // lerp current show position and logical position
+            var pos = Vector2.Lerp(mOldPos, mNewPos, 0.5f);
 
             this.transform.localPosition = pos;
         }

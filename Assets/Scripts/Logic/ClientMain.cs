@@ -1,61 +1,85 @@
 ﻿using System.Collections.Generic;
-using FixMath;
+using FP;
 using Log;
 using Network;
 
 namespace Logic
 {
     /// <summary>
-    /// 客户端逻辑入口
+    /// entrance for logical client 
     /// </summary>
     public class ClientMain : ISnapshot<ClientSnapshot>
     {
+        public ClientNetworkProxy NetworkProxy { get; private set; }
+        
+        public PlayerInputManager PlayerInputManager { get;private set; }
+
         /// <summary>
-        /// 当前帧
+        /// current frame, will increase just before handling next frame data from server
         /// </summary>
         public int CurFrame { get; private set; }
 
         /// <summary>
-        /// 等待处理的帧数据，按帧排序过
-        /// </summary>
-        private LinkedList<FrameOperation> mWaitFrames;
-
-        /// <summary>
-        /// 确定随机数
+        /// deterministic random generator
         /// </summary>
         private FRandom mRand;
 
         /// <summary>
-        /// 网络接口
+        /// initial data of the whole gameplay
         /// </summary>
-        private INetwork mNetwork;
-
         public GameInitInfo GameInitInfo { get; private set; }
+
         public UnitManager UnitMgr { get; private set; }
+
+        /// <summary>
+        ///  TODO should support multiple player
+        /// </summary>
         public Player Player => UnitMgr.Player;
+
+        /// <summary>
+        /// result info of the whole gameplay
+        /// </summary>
         public ResultInfo Result { get; private set; }
+
         public GameState State { get; private set; }
 
         /// <summary>
-        /// 是否开启数据缓存，供表现层使用
+        /// play mode of current game, affects specific behaviors
         /// </summary>
-        public bool WithRecord { get; private set; }
+        private GamePlayMode mPlayMode;
 
-        public bool IsReplay { get; private set; }
+        /// <summary>
+        /// whether generate data for presentation
+        /// </summary>
+        public bool WithRecord => this.mPlayMode == GamePlayMode.Play || this.mPlayMode == GamePlayMode.Replay;
 
+        /// <summary>
+        /// whether is replaying,
+        /// in replay mode, all frame operations are set before running,
+        /// so no need to wait for server's response
+        /// </summary>
+        public bool IsReplay => this.mPlayMode == GamePlayMode.Replay || this.mPlayMode == GamePlayMode.Validate;
+
+        /// <summary>
+        /// time left for next frame processing
+        /// </summary>
         private float mFrameCd;
 
-        public void Init(GameInitInfo gameInitInfo, INetwork network, bool withRecord, bool isReplay = false)
+        public void Init(GameInitInfo gameInitInfo, INetwork network, GamePlayMode playMode)
         {
+            NetworkProxy = new ClientNetworkProxy(network);
+            NetworkProxy.SpFrameHandler += OnSpecialFrame;
+
+            this.mPlayMode = playMode;
+
+            PlayerInputManager = new PlayerInputManager(this);
+
             InitStatic();
 
             GameInitInfo = gameInitInfo;
-            mNetwork = network;
-            WithRecord = withRecord;
-            IsReplay = isReplay;
+
 
             Result = null;
-            mWaitFrames = new LinkedList<FrameOperation>();
 
             mRand = new FRandom(gameInitInfo.RandSeed);
             UnitMgr = new UnitManager(this);
@@ -64,6 +88,9 @@ namespace Logic
             State = GameState.Loading;
         }
 
+        /// <summary>
+        /// initialize static fields of all relevant classes
+        /// </summary>
         private static void InitStatic()
         {
             ClientObject.NextUid = 0;
@@ -76,6 +103,7 @@ namespace Logic
                 return;
             }
 
+            //sleep for a specific time interval before processing next frame
             mFrameCd -= deltaTime;
             if (mFrameCd > 0)
             {
@@ -84,37 +112,34 @@ namespace Logic
 
             if (HandleFrame())
             {
-                mFrameCd = Const.FrameInterval;
+                //update one frame
+                // if game finished during the process, it's a complicated question whether to abort or finish the simulation
+                LogicUpdate();
+
+                //reset sleep timer
+                mFrameCd = LogicConst.FrameInterval;
             }
         }
 
+        /// <summary>
+        /// fetch and handle frame data from server
+        /// </summary>
+        /// <returns>the operation succeed or not</returns>
         public bool HandleFrame()
         {
+            //jump out if game over
             if (State != GameState.Running)
             {
                 return false;
             }
 
-            var first = mWaitFrames.First;
-            //没有下一帧数据
-            if (first == null || first.Value.FrameIndex != CurFrame + 1)
+            var frameOperation = NetworkProxy.GetFrameOperation(CurFrame + 1);
+            if (frameOperation != null)
             {
-                if (!IsReplay)
-                {
-                    return false;
-                }
-
-                //新帧开始
+                //into new frame
                 ++CurFrame;
-            }
-            else
-            {
-                //移除该帧
-                mWaitFrames.RemoveFirst();
-                //新帧开始
-                ++CurFrame;
-                //处理操作下发
-                var operations = first.Value.OperationList;
+                //handle operations
+                var operations = frameOperation.OperationList;
                 if (operations != null)
                 {
                     foreach (var operation in operations)
@@ -123,14 +148,24 @@ namespace Logic
                     }
                 }
             }
+            else
+            {
+                //in replay mode, empty frame data is ignored
+                if (!IsReplay)
+                {
+                    return false;
+                }
 
-            //推进一帧
-            //此时可能会结算，后续的Update执行会不会有问题，待议
-            LogicUpdate();
+                //no frame data for this frame, just start update
+                ++CurFrame;
+            }
 
             return true;
         }
 
+        /// <summary>
+        /// handles specific operations from server, only for normal frame data
+        /// </summary>
         private void HandleOperation(BaseOperation operation)
         {
             switch (operation.OpType)
@@ -146,9 +181,9 @@ namespace Logic
         }
 
         /// <summary>
-        /// 推进一帧
+        /// update whole game world, after handling frame data
         /// </summary>
-        private void LogicUpdate()
+        public void LogicUpdate()
         {
             UnitMgr.LogicUpdate();
         }
@@ -156,75 +191,65 @@ namespace Logic
         public void OnGameStart()
         {
             State = GameState.Running;
+            //start process when receive first frame(frame 0)
             mFrameCd = 0;
+            //wait for frame 0
             CurFrame = -1;
         }
 
         /// <summary>
-        /// 接收到服务器下发帧操作
+        /// handle special frame operation
         /// </summary>
-        public void OnReceiveFrame(FrameOperation frameOperation)
+        private void OnSpecialFrame(FrameData frameData)
         {
-            switch (frameOperation.FrameIndex)
+            if (frameData.OperationList != null)
             {
-                case -1: //特殊操作
+                var operation = frameData.OperationList[0];
+                if (operation.OpType == OperationType.GameStart)
                 {
-                    Logger.Info($"[Frame] Client Receive {frameOperation}");
-
-                    if (frameOperation.OperationList != null)
-                    {
-                        var operation = frameOperation.OperationList[0];
-                        if (operation.OpType == OperationType.GameStart)
-                        {
-                            OnGameStart();
-                        }
-                    }
-                    else
-                    {
-                        Logger.Error($"WTF");
-                    }
+                    OnGameStart();
                 }
-                    break;
-                case -2:
-                {
-                    Logger.Error("WTF");
-                }
-                    break;
-                default:
-                {
-                    if (frameOperation.OperationList != null)
-                    {
-                        Logger.Info($"[Frame] Client Receive {frameOperation}");
-                    }
-
-                    var tmp = mWaitFrames.Last;
-                    while (tmp != null)
-                    {
-                        if (frameOperation.FrameIndex > tmp.Value.FrameIndex)
-                        {
-                            mWaitFrames.AddAfter(tmp, frameOperation);
-                            return;
-                        }
-
-                        tmp = tmp.Previous;
-                    }
-
-                    mWaitFrames.AddFirst(frameOperation);
-                }
-                    break;
+            }
+            else
+            {
+                Logger.Error($"WTF");
             }
         }
 
+
         /// <summary>
-        /// 准备就绪(资源加载等操作完成)
+        /// notify the server that this client is ready to start
         /// </summary>
         public void OnGameReady()
         {
             State = GameState.Ready;
             var operation = new GameReadyOperation();
-            mNetwork?.SendToServer(operation);
+            NetworkProxy.SendToServer(operation);
         }
 
+        /// <summary>
+        /// choose some data from current game state to generate result info,
+        /// for server validation
+        /// </summary>
+        private ResultInfo GenerateResultInfo()
+        {
+            var posList = new List<FVector2>(UnitMgr.EnemyMap.Count + 1);
+            posList.Add(UnitMgr.Player.Pos);
+            foreach (var unitPair in UnitMgr.EnemyMap)
+            {
+                posList.Add(unitPair.Value.Pos);
+            }
+
+            return new ResultInfo()
+            {
+                LastFrame = CurFrame,
+                PosList = posList,
+            };
+        }
+
+        /// <summary>
+        /// operation for game finish
+        /// </summary>
         public void OnGameFinish()
         {
             if (State == GameState.Finished)
@@ -235,30 +260,18 @@ namespace Logic
 
             State = GameState.Finished;
 
-            var posList = new List<FVector2>(UnitMgr.EnemyMap.Count + 1);
-            posList.Add(UnitMgr.Player.Pos);
-            foreach (var unitPair in UnitMgr.EnemyMap)
-            {
-                posList.Add(unitPair.Value.Pos);
-            }
+            Result = GenerateResultInfo();
 
-            Result = new ResultInfo()
-            {
-                LastFrame = CurFrame,
-                PosList = posList,
-            };
-
-            //上报结算
+            //report result to server
             var operation = new GameFinishOperation(Result);
-            mNetwork?.SendToServer(operation);
+            NetworkProxy.SendToServer(operation);
         }
 
-        #region 公共方法
+        #region common methods
 
         /// <summary>
-        /// 发送单操作到S,只针对普通操作
+        /// send operation to server, only for normal operations
         /// </summary>
-        /// <param name="operation">单操作</param>
         public void SendToServer(BaseOperation operation)
         {
             if (State != GameState.Running)
@@ -269,13 +282,14 @@ namespace Logic
             Logger.Assert(operation.OpType > OperationType.MinNormal,
                 $"${operation.OpType} Not Allowed Here, should greater than OperationType.MinNormal");
             Logger.Info($"[Frame] Client Send {operation}");
-            mNetwork?.SendToServer(operation);
+            NetworkProxy.SendToServer(operation);
         }
 
         /// <summary>
-        /// 随机数生成器，Logic必须使用这个
+        /// generate a random number,
+        /// all random number in logic scope should be generated by this method,
+        /// should not be called outside logic scope
         /// </summary>
-        /// <returns>随机数</returns>
         public int NextRand()
         {
             return mRand.NextRand();
@@ -283,9 +297,24 @@ namespace Logic
 
         #endregion
 
+        #region snapshot
+
+        /// <summary>
+        /// save all static field values to snapshot,
+        /// they don't belong to any instance, so should be saved separately
+        /// </summary>
         private static void SaveStatic(StaticSnapshot snapshot)
         {
             snapshot.ClientObject_NextUid = ClientObject.NextUid;
+        }
+
+        /// <summary>
+        /// revert static field values from snapshot,
+        /// they don't belong to any instance, so should be reverted separately
+        /// </summary>
+        private static void RevertStatic(StaticSnapshot snapshot)
+        {
+            ClientObject.NextUid = snapshot.ClientObject_NextUid;
         }
 
         public void SaveToSnapShot(ClientSnapshot snapshot)
@@ -297,25 +326,14 @@ namespace Logic
             UnitMgr.SaveToSnapShot(snapshot.UnitMgr);
         }
 
-        private static void RevertStatic(StaticSnapshot snapshot)
-        {
-            ClientObject.NextUid = snapshot.ClientObject_NextUid;
-        }
-
-        public void RevertToSnapShot(ClientSnapshot snapshot, bool needBase)
+        public void RevertFromSnapShot(ClientSnapshot snapshot)
         {
             RevertStatic(snapshot.Static);
 
             CurFrame = snapshot.CurFrame;
 
-            if (mRand == null)
-            {
-                mRand = new FRandom(snapshot.Rand);
-            }
-            else
-            {
-                mRand.RevertToSnapShot(snapshot.Rand, true);
-            }
+            mRand ??= new FRandom();
+            mRand.RevertToSnapShot(snapshot.Rand);
 
             if (UnitMgr == null)
             {
@@ -323,10 +341,12 @@ namespace Logic
             }
             else
             {
-                UnitMgr.RevertToSnapShot(snapshot.UnitMgr, true);
+                UnitMgr.RevertFromSnapShot(snapshot.UnitMgr);
             }
 
-            //TODO 设置mWaitFrames，Result等
+            //TODO other fields
         }
+
+        #endregion
     }
 }

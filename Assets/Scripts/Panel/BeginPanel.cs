@@ -6,6 +6,9 @@ using UnityEngine.UI;
 
 namespace Panel
 {
+    /// <summary>
+    /// used to configure some init params for gameplay
+    /// </summary>
     public class BeginPanel : PanelSingleton<BeginPanel>
     {
         public Slider CountSlider;

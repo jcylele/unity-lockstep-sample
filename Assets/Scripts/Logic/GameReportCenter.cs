@@ -3,7 +3,11 @@ using System.Collections.Generic;
 
 namespace Logic
 {
-    public class DataBase : Singleton<DataBase>
+    /// <summary>
+    /// temporary storage for game reports(initial info and operations).
+    /// only in memory, not saved to disk.
+    /// </summary>
+    public class GameReportCenter : Singleton<GameReportCenter>
     {
         private readonly SortedDictionary<long, byte[]> mReports = new SortedDictionary<long, byte[]>();
 

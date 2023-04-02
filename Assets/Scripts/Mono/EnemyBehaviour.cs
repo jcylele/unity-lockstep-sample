@@ -1,11 +1,11 @@
-using FixMath;
+using FP;
 using Logic;
 using UnityEngine;
 
 namespace Mono
 {
     /// <summary>
-    /// ±Ìœ÷µ–»À
+    /// show unit of enemy
     /// </summary>
     public class EnemyBehaviour : MonoBehaviour
     {

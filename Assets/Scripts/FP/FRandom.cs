@@ -1,12 +1,9 @@
-using System;
-using Logic;
-
-namespace FixMath
+namespace FP
 {
     /// <summary>
-    /// 稳定随机数生成器
+    /// deterministic random number generator
     /// </summary>
-    public class FRandom : ISnapshot<FRandomSnapshot>
+    public class FRandom
     {
         private ulong mRandSeed;
         private const ulong RandA = 0x5DECEC6D6;
@@ -18,25 +15,24 @@ namespace FixMath
             this.mRandSeed = randSeed;
         }
 
-        public FRandom(FRandomSnapshot snapshot)
-        {
-            this.RevertToSnapShot(snapshot, false);
-        }
-
         public int NextRand()
         {
             mRandSeed = (mRandSeed * RandA + RandC) % RandM;
             return (int)(mRandSeed & int.MaxValue);
         }
 
-        public void SaveToSnapShot(FRandomSnapshot snapshot)
+        /// <summary>
+        /// set rand seed, don't use it unless you're sure
+        /// </summary>
+        /// <param name="randSeed">new rand seed</param>
+        public void SetRandSeed(ulong randSeed)
         {
-            snapshot.CurSeed = this.mRandSeed;
+            mRandSeed = randSeed;
         }
 
-        public void RevertToSnapShot(FRandomSnapshot snapshot, bool needBase)
+        public ulong GetRandSeed()
         {
-            this.mRandSeed = snapshot.CurSeed;
+            return this.mRandSeed;
         }
     }
 }

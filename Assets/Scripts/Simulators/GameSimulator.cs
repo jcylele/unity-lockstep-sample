@@ -1,18 +1,18 @@
 using Log;
 using Logic;
 using Network;
-using Server;
 
-namespace Mono
+namespace Simulators
 {
     /// <summary>
-    /// 游戏沙盒模拟器
+    /// the normal game simulator, contains client and server
+    /// <para>with presentation, waits for packet from server</para>
     /// </summary>
     public class GameSimulator : ISimulator
     {
-        public INetwork Network { get; }
+        private INetwork Network { get; }
         public ClientMain Client { get; }
-        public ServerMain Server { get; }
+        private ServerMain Server { get; }
 
         public GameSimulator(GameInitInfo gameInitInfo, INetwork network)
         {
@@ -24,7 +24,7 @@ namespace Mono
             Network = network;
 
             Client = new ClientMain();
-            Client.Init(gameInitInfo, network, true);
+            Client.Init(gameInitInfo, network, GamePlayMode.Play);
 
             Server = new ServerMain();
             Server.Init(gameInitInfo, network);
@@ -37,9 +37,9 @@ namespace Mono
             Client.Update(deltaTime);
         }
 
-        void OnClientReceive(FrameOperation frameOperation)
+        void OnClientReceive(FrameData frameData)
         {
-            Client.OnReceiveFrame(frameOperation);
+            Client.NetworkProxy.OnReceiveFrameData(frameData);
         }
 
         void OnServerReceive(BaseOperation operation)

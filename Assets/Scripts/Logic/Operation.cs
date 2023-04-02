@@ -1,42 +1,47 @@
 using System.Collections.Generic;
-using FixMath;
+using FP;
 using ProtoBuf;
 
 namespace Logic
 {
     /// <summary>
-    /// 帧操作
+    /// operation type in game play
     /// </summary>
     public enum OperationType
     {
         None,
 
         /// <summary>
-        /// 准备就绪，参见<see cref="GameReadyOperation"/>
+        /// client to server(C2S), client is ready to start the game
         /// </summary>
         GameReady,
 
         /// <summary>
-        /// 战斗开始，参见<see cref="GameStartOperation"/>
+        /// server to client(S2C), game starts
         /// </summary>
         GameStart,
 
         /// <summary>
-        /// 战斗结束，参见<see cref="GameFinishOperation"/>
+        /// client to server(C2S), game over
         /// </summary>
         GameFinish,
 
         /// <summary>
-        /// 特殊标志，特殊帧和普通帧的分割线
+        /// special operation,
+        /// operations above this is special,
+        /// while operations below this is normal.
         /// </summary>
         MinNormal = 100,
 
         /// <summary>
-        /// 按键，参见<see cref="KeyOperation"/>
+        /// Keyboard Input from user
         /// </summary>
         Key,
     }
 
+    /// <summary>
+    /// initial info of a game
+    /// </summary>
     [ProtoContract]
     public class GameInitInfo
     {
@@ -44,13 +49,19 @@ namespace Logic
         [ProtoMember(2)] public List<int> EnemySidList;
     }
 
+    /// <summary>
+    /// report of a game, can be used to replay a game
+    /// </summary>
     [ProtoContract]
     public class GameReport
     {
         [ProtoMember(1)] public GameInitInfo GameInitInfo;
-        [ProtoMember(2)] public List<FrameOperation> FrameOperationList;
+        [ProtoMember(2)] public List<FrameData> FrameOperationList;
     }
 
+    /// <summary>
+    /// base class of all single operations
+    /// </summary>
     [ProtoContract]
     [ProtoInclude(101, typeof(KeyOperation))]
     [ProtoInclude(102, typeof(GameReadyOperation))]
@@ -71,17 +82,20 @@ namespace Logic
         }
     }
 
+    /// <summary>
+    /// whole data of a frame, contains frame index and all operations in this frame
+    /// </summary>
     [ProtoContract]
-    public class FrameOperation
+    public class FrameData
     {
         [ProtoMember(1)] public int FrameIndex;
         [ProtoMember(2)] public List<BaseOperation> OperationList;
 
-        public FrameOperation() : this(0, null)
+        public FrameData() : this(0, null)
         {
         }
 
-        public FrameOperation(int frameIndex, List<BaseOperation> operationList)
+        public FrameData(int frameIndex, List<BaseOperation> operationList)
         {
             this.FrameIndex = frameIndex;
             this.OperationList = operationList;
@@ -125,6 +139,10 @@ namespace Logic
         }
     }
 
+    /// <summary>
+    /// result info of the game,records specific info of the game,
+    /// used to validate the game, such checking for cheating and bugs
+    /// </summary>
     [ProtoContract]
     public class ResultInfo
     {

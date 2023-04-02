@@ -1,14 +1,17 @@
-public class Singleton<T> where T : new()
+namespace Logic
 {
-    private static T _instance;
-
-    public static T Instance
+    public class Singleton<T> where T : new()
     {
-        get
-        {
-            if (_instance == null) _instance = new T();
+        private static T _instance;
 
-            return _instance;
+        public static T Instance
+        {
+            get
+            {
+                if (_instance == null) _instance = new T();
+
+                return _instance;
+            }
         }
     }
 }

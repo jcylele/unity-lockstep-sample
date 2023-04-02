@@ -1,12 +1,12 @@
-using FixMath;
+using FP;
 using Log;
 
 namespace Logic
 {
     /// <summary>
-    /// 逻辑作战单位(玩家，敌人的基类)
+    /// base class for all units
     /// </summary>
-    public class  Unit : RecordableObject<UnitRecord>, ISnapshot<UnitSnapshot>
+    public class Unit : ClientObject, ISnapshot<UnitSnapshot>
     {
         public int Sid { get; private set; }
 
@@ -18,15 +18,21 @@ namespace Logic
         protected FVector2 mCurPos;
         public FVector2 Pos => mCurPos;
 
+        /// <summary>
+        /// constructor for new unit
+        /// </summary>
         public Unit(ClientMain client, int sid) : base(client)
         {
             Sid = sid;
             Config = UnitConfig.GetConfig(sid);
         }
 
+        /// <summary>
+        /// constructor for snapshot
+        /// </summary>
         public Unit(ClientMain client, UnitSnapshot snapshot) : base(client, snapshot)
         {
-            this.RevertToSnapShot(snapshot, false);
+            this.RevertFromSnapShot(snapshot);
         }
 
         protected override void InnerUpdate()
@@ -35,31 +41,25 @@ namespace Logic
 
             if (mMoveDir == FVector2.Zero) return;
 
-            Logger.Assert(mMoveDir.sqLength == FPoint.One, "mMoveDir not normalized");
+            Logger.Assert(mMoveDir.SqLength == FPoint.One, "mMoveDir not normalized");
 
-            mCurPos += mMoveDir * Config.moveSpeed * Const.FrameInterval;
+            mCurPos += mMoveDir * Config.moveSpeed * LogicConst.FrameInterval;
 
-            if (mCurPos.x > Const.MaxX)
-                mCurPos.x = Const.MaxX;
-            else if (mCurPos.x < -Const.MaxX) mCurPos.x = -Const.MaxX;
+            if (mCurPos.x > LogicConst.MaxX)
+                mCurPos.x = LogicConst.MaxX;
+            else if (mCurPos.x < -LogicConst.MaxX) mCurPos.x = -LogicConst.MaxX;
 
-            if (mCurPos.y > Const.MaxY)
-                mCurPos.y = Const.MaxY;
-            else if (mCurPos.y < -Const.MaxY) mCurPos.y = -Const.MaxY;
+            if (mCurPos.y > LogicConst.MaxY)
+                mCurPos.y = LogicConst.MaxY;
+            else if (mCurPos.y < -LogicConst.MaxY) mCurPos.y = -LogicConst.MaxY;
         }
 
         public virtual void Spawn()
         {
         }
 
-        protected override void CaptureRecord(UnitRecord record)
-        {
-            base.CaptureRecord(record);
-
-            record.Pos = Pos;
-            record.MoveDir = MoveDir;
-        }
-
+        #region snapshot
+        
         public void SaveToSnapShot(UnitSnapshot snapshot)
         {
             base.SaveToSnapShot(snapshot);
@@ -69,17 +69,16 @@ namespace Logic
             snapshot.Pos = Pos;
         }
 
-        public void RevertToSnapShot(UnitSnapshot snapshot, bool needBase)
+        public void RevertFromSnapShot(UnitSnapshot snapshot)
         {
-            if (needBase)
-            {
-                base.RevertToSnapShot(snapshot, true);
-            }
+            base.RevertFromSnapShot(snapshot);
             this.Sid = snapshot.Sid;
             Config = UnitConfig.GetConfig(Sid);
 
             this.mMoveDir = snapshot.MoveDir;
             this.mCurPos = snapshot.Pos;
         }
+        
+        #endregion
     }
 }

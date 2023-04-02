@@ -4,16 +4,17 @@ using System.IO;
 namespace Logic
 {
     /// <summary>
-    /// ProtoBuf相关接口
+    /// ProtoBuf Extensions.
+    /// <para>copied from internet, copyright reserved by the owner</para>
     /// </summary>
     public static class ProtoBufExtension
     {
         /// <summary>
-        /// 将对象实例序列化为字符串（Base64编码格式）——ProtoBuf
+        /// serialize object to base64 encoded string
         /// </summary>
-        /// <typeparam name="T">对象类型</typeparam>
-        /// <param name="obj">对象实例</param>
-        /// <returns>字符串（Base64编码格式）</returns>
+        /// <typeparam name="T">object type</typeparam>
+        /// <param name="obj">object instance</param>
+        /// <returns>base64 encoded string</returns>
         public static string SerializeToString_PB<T>(this T obj)
         {
             using (MemoryStream ms = new MemoryStream())
@@ -24,11 +25,11 @@ namespace Logic
         }
 
         /// <summary>
-        /// 将字符串（Base64编码格式）反序列化为对象实例——ProtoBuf
+        /// deserialize object from base64 encoded string
         /// </summary>
-        /// <typeparam name="T">对象类型</typeparam>
-        /// <param name="txt">字符串（Base64编码格式）</param>
-        /// <returns>对象实例</returns>
+        /// <typeparam name="T">object type</typeparam>
+        /// <param name="txt">base64 encoded string</param>
+        /// <returns>object instance</returns>
         public static T DeserializeFromString_PB<T>(this string txt)
         {
             byte[] arr = Convert.FromBase64String(txt);
@@ -37,11 +38,11 @@ namespace Logic
         }
 
         /// <summary>
-        /// 将对象实例序列化为字节数组——ProtoBuf
+        /// serialize object to byte array
         /// </summary>
-        /// <typeparam name="T">对象类型</typeparam>
-        /// <param name="obj">对象实例</param>
-        /// <returns>字节数组</returns>
+        /// <typeparam name="T">object type</typeparam>
+        /// <param name="obj">object instance</param>
+        /// <returns>byte array</returns>
         public static byte[] SerializeToByteAry_PB<T>(this T obj)
         {
             using (MemoryStream ms = new MemoryStream())
@@ -52,11 +53,11 @@ namespace Logic
         }
 
         /// <summary>
-        /// 将字节数组反序列化为对象实例——ProtoBuf
+        /// deserialize object from byte array
         /// </summary>
-        /// <typeparam name="T">对象类型</typeparam>
-        /// <param name="arr">字节数组</param>
-        /// <returns></returns>
+        /// <typeparam name="T">object type</typeparam>
+        /// <param name="arr">byte array</param>
+        /// <returns>object instance</returns>
         public static T DeserializeFromByteAry_PB<T>(this byte[] arr)
         {
             using (MemoryStream ms = new MemoryStream(arr))
@@ -64,11 +65,11 @@ namespace Logic
         }
 
         /// <summary>
-        /// 将对象实例序列化为二进制文件——ProtoBuf
+        /// serialize object to file
         /// </summary>
-        /// <typeparam name="T">对象类型</typeparam>
-        /// <param name="obj">对象实例</param>
-        /// <param name="path">文件路径（目录+文件名）</param>
+        /// <typeparam name="T">object type</typeparam>
+        /// <param name="obj">object instance</param>
+        /// <param name="path">target file path</param>
         public static void SerializeToFile_PB<T>(this T obj, string path)
         {
             using (var file = File.Create(path))
@@ -78,11 +79,11 @@ namespace Logic
         }
 
         /// <summary>
-        /// 将二进制文件反序列化为对象实例——ProtoBuf
+        /// deserialize object from file
         /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="path"></param>
-        /// <returns></returns>
+        /// <typeparam name="T">object type</typeparam>
+        /// <param name="path">target file path</param>
+        /// <returns>object instance</returns>
         public static T DeserializeFromFile_PB<T>(this string path)
         {
             using (var file = File.OpenRead(path))

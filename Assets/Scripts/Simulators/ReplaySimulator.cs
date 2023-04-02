@@ -1,8 +1,11 @@
 using Log;
 using Logic;
 
-namespace Mono
+namespace Simulators
 {
+    /// <summary>
+    /// replay a game according to initial info and frame operations
+    /// </summary>
     public class ReplaySimulator : ISimulator
     {
         public ClientMain Client { get; }
@@ -13,12 +16,12 @@ namespace Mono
             Logger.SetLogger(new MonoLogger());
 
             Client = new ClientMain();
-            Client.Init(report.GameInitInfo, null, true, true);
+            Client.Init(report.GameInitInfo, null, GamePlayMode.Replay);
             if (report.FrameOperationList != null)
             {
                 foreach (var frameOperation in report.FrameOperationList)
                 {
-                    Client.OnReceiveFrame(frameOperation);
+                    Client.NetworkProxy.OnReceiveFrameData(frameOperation);
                 }
             }
         }

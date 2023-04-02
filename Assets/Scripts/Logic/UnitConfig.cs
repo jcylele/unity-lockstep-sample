@@ -2,20 +2,23 @@ using System.Collections.Generic;
 
 namespace Logic
 {
+    /// <summary>
+    /// temporary config for units
+    /// </summary>
     public class UnitConfig
     {
         /// <summary>
-        /// 移动速度(移动距离/s)
+        /// move speed, unit: logical distance unit/second
         /// </summary>
         public int moveSpeed;
 
         /// <summary>
-        /// 碰撞半径
+        /// collision radius, unit: logical distance unit
         /// </summary>
         public int radius;
 
         /// <summary>
-        /// 预制体路径
+        /// prefab path
         /// </summary>
         public string prefabPath;
 

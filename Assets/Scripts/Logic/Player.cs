@@ -1,6 +1,6 @@
 using System;
 using System.Collections.Generic;
-using FixMath;
+using FP;
 using Log;
 
 namespace Logic
@@ -16,7 +16,7 @@ namespace Logic
     }
 
     /// <summary>
-    ///     逻辑玩家
+    /// logical player
     /// </summary>
     public class Player : Unit
     {
@@ -47,6 +47,9 @@ namespace Logic
 
         }
 
+        /// <summary>
+        /// handles key input
+        /// </summary>
         public void OnKey(KeyType key, KeyOpType opType)
         {
             if (!KeyToDir.TryGetValue(key, out var dir))
@@ -70,6 +73,9 @@ namespace Logic
             ReCalcDir();
         }
 
+        /// <summary>
+        /// recalculate normalized move direction after key input
+        /// </summary>
         private void ReCalcDir()
         {
             mMoveDir = FVector2.Zero;
@@ -79,13 +85,7 @@ namespace Logic
                 if ((mDirection & pair.Key) != DIR.None) mMoveDir += pair.Value;
             }
 
-            mMoveDir = mMoveDir.normalized;
-        }
-
-        public void SendOperation(KeyType key, KeyOpType opType)
-        {
-            var operation = new KeyOperation(key, opType);
-            Client.SendToServer(operation);
+            mMoveDir = mMoveDir.Normalized;
         }
 
         public override void Spawn()

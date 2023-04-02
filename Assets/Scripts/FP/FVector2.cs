@@ -1,13 +1,31 @@
 using ProtoBuf;
 
-namespace FixMath
+namespace FP
 {
     /// <summary>
-    /// 定点数2维向量
+    /// fixpoint version of Vector2, for deterministic calculation
     /// </summary>
     [ProtoContract]
     public struct FVector2
     {
+        public bool Equals(FVector2 other)
+        {
+            return x.Equals(other.x) && y.Equals(other.y);
+        }
+
+        public override bool Equals(object obj)
+        {
+            return obj is FVector2 other && Equals(other);
+        }
+
+        public override int GetHashCode()
+        {
+            unchecked
+            {
+                return (x.GetHashCode() * 397) ^ y.GetHashCode();
+            }
+        }
+
         [ProtoMember(1)]
         public FPoint x;
         [ProtoMember(2)]
@@ -25,14 +43,20 @@ namespace FixMath
         public static FVector2 Up => new FVector2(FPoint.Zero, new FPoint(1));
         public static FVector2 Down => new FVector2(FPoint.Zero, new FPoint(-1));
 
-        public FPoint sqLength => x * x + y * y;
-        public FPoint length => FMath.Sqrt(sqLength);
+        /// <summary>
+        /// square length, use this instead of Length if you only need to compare length
+        /// </summary>
+        public FPoint SqLength => x * x + y * y;
+        public FPoint Length => FMath.Sqrt(SqLength);
 
-        public FVector2 normalized
+        /// <summary>
+        /// normalized vector
+        /// </summary>
+        public FVector2 Normalized
         {
             get
             {
-                var sql = this.sqLength;
+                var sql = this.SqLength;
                 if (sql == FPoint.Zero || sql == FPoint.One)
                 {
                     return this;

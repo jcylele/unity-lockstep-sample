@@ -6,7 +6,7 @@ using Logic;
 namespace Network
 {
     /// <summary>
-    /// 网络延时结构
+    /// simulate network latency
     /// </summary>
     public class Latency
     {
@@ -21,18 +21,27 @@ namespace Network
     }
 
     /// <summary>
-    /// 模拟网络延时效果
+    /// simulate network lag, but no packet loss at present
     /// </summary>
     public class NetworkSimulator : INetwork
     {
         private ClientRecvFunc mClientFunc;
         private ServerRecvFunc mServerFunc;
 
+        /// <summary>
+        /// packets transporting towards client
+        /// </summary>
         private List<Latency> mToClient;
 
+        /// <summary>
+        /// packets transporting towards server
+        /// </summary>
         private List<Latency> mToServer;
 
         private Random mRand;
+        /// <summary>
+        /// average lag of the network
+        /// </summary>
         private float mAverageLag;
 
         public void Init(ClientRecvFunc clientFunc, ServerRecvFunc serverFunc)
@@ -46,6 +55,10 @@ namespace Network
             mRand = new Random(0);
         }
 
+        /// <summary>
+        /// set average lag
+        /// </summary>
+        /// <param name="lag"> average lag </param>
         public void SetAverageLag(float lag)
         {
             mAverageLag = lag;
@@ -69,8 +82,8 @@ namespace Network
                 {
                     mToClient.RemoveAt(i);
 
-                    //客户端接收到服务器下发
-                    var frameOperation = latency.Data.DeserializeFromString_PB<FrameOperation>();
+                    //packet arrives at client
+                    var frameOperation = latency.Data.DeserializeFromString_PB<FrameData>();
                     mClientFunc(frameOperation);
                 }
             }
@@ -85,20 +98,21 @@ namespace Network
                 else
                 {
                     mToServer.RemoveAt(i);
-                    // 服务器接收到用户输入
+                    // packet arrives at server
                     var frameOperation = latency.Data.DeserializeFromString_PB<BaseOperation>();
                     mServerFunc(frameOperation);
                 }
             }
         }
 
-        public void SendToClient(FrameOperation frameOperation)
+        public void SendToClient(FrameData frameData)
         {
-            if (frameOperation.FrameIndex == -2)
+            if (frameData.FrameIndex == -2)
             {
                 Logger.Error("WTF");
             }
-            var latency = new Latency(RandomLag(), frameOperation.SerializeToString_PB());
+
+            var latency = new Latency(RandomLag(), frameData.SerializeToString_PB());
             mToClient.Add(latency);
         }
 
@@ -108,6 +122,10 @@ namespace Network
             mToServer.Add(latency);
         }
 
+        /// <summary>
+        /// randomize lag for the packet
+        /// </summary>
+        /// <returns></returns>
         private float RandomLag()
         {
             var factor = (float)mRand.NextDouble();

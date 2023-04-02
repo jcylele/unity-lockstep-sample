@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using Logic;
 using Mono;
 using Network;
+using Simulators;
 using UnityEngine;
 
 namespace Panel
@@ -167,7 +168,7 @@ namespace Panel
         {
             var snapshot = new ClientSnapshot();
             mSimulator.Client.SaveToSnapShot(snapshot);
-            // DataBase.Instance.TestSnapshot(snapshot);
+            // GameReportCenter.Instance.TestSnapshot(snapshot);
         }
     }
 }

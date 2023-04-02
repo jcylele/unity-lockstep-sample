@@ -2,27 +2,40 @@ using System;
 using Log;
 using ProtoBuf;
 
-namespace FixMath
+namespace FP
 {
-    // <see cref="https://www.cnblogs.com/cnxkey/articles/9721595.html"/>
     /// <summary>
-    /// 定点数，高位表示整数，低位表示小数
+    /// fixed point number, replacement of float, for deterministic calculation.
     /// </summary>
     [ProtoContract]
     public struct FPoint
     {
+        public bool Equals(FPoint other)
+        {
+            return Val == other.Val;
+        }
+
+        public override bool Equals(object obj)
+        {
+            return obj is FPoint other && Equals(other);
+        }
+
+        public override int GetHashCode()
+        {
+            return Val.GetHashCode();
+        }
+
         /// <summary>
-        /// 小数部分占用的位数，
-        /// 位数越多精度越高同时数值范围变小
+        /// number of digits for decimal fraction  
         /// </summary>
-        public const int FRAC_BIT = 16;
+        private const int FRAC_BIT = 16;
 
         public static readonly FPoint Zero = new FPoint(0);
         public static readonly FPoint One = new FPoint(1);
 
         [ProtoMember(1)] public long Val { get; set; }
 
-        #region 构造函数
+        #region constructors
 
         public FPoint(int x)
         {
@@ -34,7 +47,7 @@ namespace FixMath
             Val = (long) (x * (1 << FRAC_BIT));
         }
 
-        public FPoint(long x)
+        private FPoint(long x)
         {
             Val = x << FRAC_BIT;
         }
@@ -132,7 +145,7 @@ namespace FixMath
 
         #endregion
 
-        #region 开方、绝对值
+        #region other operators
 
         internal static FPoint Sqrt(FPoint p1)
         {
@@ -148,7 +161,7 @@ namespace FixMath
 
         #endregion
 
-        #region 比较
+        #region compare
 
         public static bool operator !=(FPoint p1, FPoint p2)
         {
@@ -187,7 +200,7 @@ namespace FixMath
 
         #endregion
 
-        #region Cast
+        #region Cast to int/float/string
 
         public int ToInt()
         {
@@ -209,6 +222,9 @@ namespace FixMath
             return new FPoint(a);
         }
 
+        public static implicit operator float(FPoint fp) => fp.ToFloat();
+        public static implicit operator int(FPoint fp) => fp.ToInt();
+        
         public override string ToString()
         {
             var tmp = Val / (float) (1 << FRAC_BIT);

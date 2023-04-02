@@ -3,12 +3,15 @@ using System.Collections.Generic;
 namespace Logic
 {
     /// <summary>
-    /// 作战单元管理器
+    /// manager of all units
     /// </summary>
     public class UnitManager : ClientObject, ISnapshot<UnitManagerSnapshot>
     {
         public Player Player { get; private set; }
 
+        /// <summary>
+        /// all enemies, sorted by uid, for deterministic purpose
+        /// </summary>
         public SortedDictionary<ulong, Enemy> EnemyMap { get; private set; }
 
         public UnitManager(ClientMain client) : base(client)
@@ -17,18 +20,18 @@ namespace Logic
 
         public UnitManager(ClientMain client, UnitManagerSnapshot snapshot) : base(client, snapshot)
         {
-            this.RevertToSnapShot(snapshot, false);
+            this.RevertFromSnapShot(snapshot);
         }
 
         public void Init(GameInitInfo gameInitInfo)
         {
             EnemyMap = new SortedDictionary<ulong, Enemy>();
 
-            //玩家
+            //player
             Player = new Player(Client);
             Player.Spawn();
 
-            //敌人
+            //enemies
             foreach (var sid in gameInitInfo.EnemySidList)
             {
                 var enemy = new Enemy(Client, sid);
@@ -37,7 +40,7 @@ namespace Logic
             }
         }
 
-        public void LogicUpdate()
+        protected override void InnerUpdate()
         {
             Player.LogicUpdate();
             foreach (var unitPair in EnemyMap)
@@ -48,19 +51,25 @@ namespace Logic
             CheckCollision();
         }
 
+        /// <summary>
+        /// check collision between player and enemies,
+        /// if collision happens, game over
+        /// </summary>
         private void CheckCollision()
         {
             foreach (var unitPair in EnemyMap)
             {
                 var deltaPos = unitPair.Value.Pos - Player.Pos;
                 var radius = unitPair.Value.Config.radius + Player.Config.radius;
-                if (deltaPos.sqLength <= radius * radius)
+                if (deltaPos.SqLength <= radius * radius)
                 {
                     Client.OnGameFinish();
                     return;
                 }
             }
         }
+
+        #region Snapshot
 
         public void SaveToSnapShot(UnitManagerSnapshot snapshot)
         {
@@ -73,12 +82,9 @@ namespace Logic
             }
         }
 
-        public void RevertToSnapShot(UnitManagerSnapshot snapshot, bool needBase)
+        public void RevertFromSnapShot(UnitManagerSnapshot snapshot)
         {
-            if (needBase)
-            {
-                base.RevertToSnapShot(snapshot, true);
-            }
+            base.RevertFromSnapShot(snapshot);
 
             if (Player == null)
             {
@@ -86,7 +92,7 @@ namespace Logic
             }
             else
             {
-                Player.RevertToSnapShot(snapshot.Player, true);
+                Player.RevertFromSnapShot(snapshot.Player);
             }
 
             var curEnemyMap = EnemyMap;
@@ -96,7 +102,7 @@ namespace Logic
             {
                 if (curEnemyMap.TryGetValue(enemySnapshot.Uid, out var enemy))
                 {
-                    enemy.RevertToSnapShot(enemySnapshot, true);
+                    enemy.RevertFromSnapShot(enemySnapshot);
                 }
                 else
                 {
@@ -105,5 +111,7 @@ namespace Logic
                 }
             }
         }
+
+        #endregion
     }
 }

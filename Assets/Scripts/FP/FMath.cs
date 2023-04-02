@@ -1,14 +1,14 @@
-namespace FixMath
+namespace FP
 {
     /// <summary>
-    /// 定点数学库
+    /// fixed point math, for deterministic calculation
     /// </summary>
     public static class FMath
     {
         public static readonly FPoint PI = new FPoint(3.14159265f);
 
         /// <summary>
-        /// sin值查找表
+        /// sin value table, length should be TAB_N/4
         /// </summary>
         private static readonly int[] SIN_TAB =
         {
@@ -22,18 +22,22 @@ namespace FixMath
         };
 
         /// <summary>
-        /// SIN_TAB*系数
+        /// factor for sin value table
         /// </summary>
         private static readonly FPoint SIN_RATIO = new FPoint(0.0001f);
 
         /// <summary>
-        /// 一圈分成多少份，份数越高精度越高
+        /// how many pieces should a whole circle be divided into
         /// </summary>
         private static readonly int TAB_N = 256;
 
 
+        /// <summary>
+        /// calculate sin value of radians
+        /// </summary>
         public static FPoint Sin(FPoint radian)
         {
+            // which piece of circle does radian fall into
             var n = (radian * TAB_N / (2 * PI)).ToInt();
             n %= TAB_N;
             var s = 0;
@@ -57,11 +61,17 @@ namespace FixMath
             return SIN_RATIO * s;
         }
 
+        /// <summary>
+        /// get square root
+        /// </summary>
         public static FPoint Sqrt(FPoint p1)
         {
             return FPoint.Sqrt(p1);
         }
 
+        /// <summary>
+        /// get absolute value
+        /// </summary>
         public static FPoint Abs(FPoint p1)
         {
             return FPoint.Abs(p1);
